@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS log_aggregate_db.entities (
 CREATE TABLE IF NOT EXISTS log_aggregate_db.parts (
   id SERIAL PRIMARY KEY,
 
-  entity_id INTEGER REFERENCES entity(id) ON DELETE CASCADE,
+  entities_id INTEGER REFERENCES log_aggregate_db.entities(id) ON DELETE CASCADE,
 
   -- refers to the offset in the overall stream
   part_offset INTEGER,
