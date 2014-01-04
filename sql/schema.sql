@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS log_aggregate_db.entities (
 
   -- entity deals with only binary data but its useful for the
   -- client to have a real content type when serving up the data
-  contentType VARCHAR(256),
+  content_type VARCHAR(256),
 
   -- each entity starts in an incomplete state once data is
   -- complete we don't expect any more part writing

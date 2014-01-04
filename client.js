@@ -2,7 +2,7 @@ var Promise = require('promise');
 
 var SQL = {
   insertEntity: 'INSERT INTO log_aggregate_db.entities' +
-                  '(updated_at, created_at, contentType, owner)' +
+                  '(updated_at, created_at, content_type, owner)' +
                 'VALUES' +
                   '(NOW(), NOW(), $1, $2)' +
                 'RETURNING id'
