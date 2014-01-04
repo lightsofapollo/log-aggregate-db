@@ -33,7 +33,17 @@ function define(pgclient) {
         rollback().then(done, done);
       }
     );
+
   });
 }
 
 module.exports.define = define;
+
+function destroy(pgclient) {
+  var sql = require('./sql/statements');
+
+  var exec = Promise.denodeify(pgclient.query.bind(pgclient));
+  return exec(sql.destroy);
+}
+
+module.exports.destroy = destroy;

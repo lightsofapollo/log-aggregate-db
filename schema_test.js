@@ -35,4 +35,26 @@ suite('postgres', function() {
       client.query(sql.destroy, done);
     });
   });
+
+  suite('#destroy', function() {
+    setup(function() {
+      return subject.define(client);
+    });
+
+    setup(function() {
+      return subject.destroy(client);
+    });
+
+    test('removal of tables and data', function(done) {
+      client.query(sql.get_version, function(err, data) {
+        assert.ok(err);
+        var msg = err.message;
+        assert.ok(
+          msg.indexOf('"log_aggregate_db.version" does not exist') !== -1,
+          'removes table'
+        );
+        done();
+      });
+    });
+  });
 });
