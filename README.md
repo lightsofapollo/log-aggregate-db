@@ -16,4 +16,4 @@ since we can use it to download the deps into "cookbooks" and check
 those in so its easy to get start without berkshelf / bundler around.
 
 To update the cookbooks though you should update the Berksfile and run
-make cookbooks. 
+make cookbooks.

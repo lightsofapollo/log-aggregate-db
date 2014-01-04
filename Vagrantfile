@@ -17,7 +17,7 @@ Vagrant.configure("2") do |config|
   config.vm.box_url = "http://grahamc.com/vagrant/ubuntu-12.04-omnibus-chef.box"
 
   config.vm.provision :shell,
-    inline: "echo export POSTGRES_URI=postgres://vagrant:#{POSTGRES_PASS}@127.0.0.1 > /etc/profile.d/postgres.sh"
+    inline: "echo export POSTGRES_URI=postgres://vagrant:#{POSTGRES_PASS}@127.0.0.1/vagrant > /etc/profile.d/postgres.sh"
 
   config.vm.provision :chef_solo do |chef|
     chef.json = {
