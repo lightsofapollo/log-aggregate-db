@@ -40,7 +40,36 @@ suite('client', function() {
     });
   });
 
-  suite('#insert', function() {
+  suite('#update', function() {
+    var id;
+    setup(function() {
+      return subject.create({ owner: 'foo' }).then(function(result) {
+        id = result;
+      });
+    });
+
+    setup(function() {
+      return subject.update(id, {
+        complete: true
+      });
+    });
+
+    test('updates complete but not foo', function() {
+      var query = "SELECT * FROM log_aggregate_db.entities " +
+                    'WHERE id = $1';
+
+      return db.client.query(query, [id]).then(
+        function(result) {
+          var row = result.rows[0];
+          assert.ok(row, 'has record');
+          assert.ok(row.complete);
+          assert.equal(row.owner, 'foo');
+        }
+      );
+    });
+  });
+
+  suite('#addPart', function() {
     var buffer = new Buffer('woot!');
 
     var id;

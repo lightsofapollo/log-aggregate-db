@@ -8,6 +8,8 @@ var SQL = {
                   '(NOW(), NOW(), $1, $2)' +
                 'RETURNING id',
 
+  updateEntity: 'UPDATE log_aggregate_db.entities SET updated_at = NOW(),',
+
   insertPart: 'INSERT INTO log_aggregate_db.parts ' +
                 '(entities_id, part_offset, part_length, content) ' +
               'VALUES ' +
@@ -36,6 +38,50 @@ Client.prototype = {
         return result.rows[0].id;
       }
     );
+  },
+
+  /**
+  Update a particular entity's settings.
+
+    client.update(111, { complete: true });
+
+  @param {Number} id for entity
+  @param {Object} options for entity
+  @param {Boolean} [options.complete]
+    when true no more parts are expected to be added.
+  @param {String} [options.owner] Current owner of the entity
+  */
+  update: function(id, options) {
+    var query = SQL.updateEntity;
+
+    if (!options) throw new Error('options are required');
+
+    var hasUpdate = ('complete' in options) ||
+                    ('owner' in options);
+
+    if (!hasUpdate) throw new Error('must pass either complete or owner');
+
+    // we can't set random $N placeholders we must go sequentially
+    var nth = 1;
+
+    var values = [];
+    var set = [];
+
+    if (options.owner) {
+      values.push(options.owner);
+      set.push('owner = $' + nth++);
+    }
+
+    if (options.complete) {
+      values.push(options.complete);
+      set.push('complete = $' + nth++);
+    }
+
+    query += set.join(', ');
+    query += ' WHERE id = $' + nth++;
+    values.push(id);
+
+    return this.db.query(query, values);
   },
 
   /**
