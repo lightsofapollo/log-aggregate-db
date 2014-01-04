@@ -10,6 +10,10 @@ suite('postgres', function() {
     client.connect(done);
   });
 
+  teardown(function() {
+    client.end();
+  });
+
   suite('#define', function() {
     setup(function(done) {
       client.query(sql.destroy, done);
