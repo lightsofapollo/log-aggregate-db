@@ -1,0 +1,4 @@
+{
+  "destroy": "DROP SCHEMA IF EXISTS log_aggregate_db CASCADE",
+  "get_version": "SELECT version FROM log_aggregate_db.version ORDER BY VERSION DESC"
+}
