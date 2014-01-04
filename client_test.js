@@ -1,6 +1,7 @@
 suite('client', function() {
   var db = require('./test/db')();
   var Client = require('./client');
+  var Promise = require('promise');
 
   var subject;
   setup(function() {
@@ -55,7 +56,7 @@ suite('client', function() {
     });
 
     test('updates complete but not foo', function() {
-      var query = "SELECT * FROM log_aggregate_db.entities " +
+      var query = 'SELECT * FROM log_aggregate_db.entities ' +
                     'WHERE id = $1';
 
       return db.client.query(query, [id]).then(
@@ -106,6 +107,59 @@ suite('client', function() {
           done();
         }
       );
+    });
+  });
+
+  suite('#content', function() {
+    var parts = [
+      new Buffer('i am the first.\n'),
+      new Buffer('i am the second.\n'),
+      new Buffer('i am the third.\n')
+    ];
+
+    var expectedFinalBuffer = Buffer.concat(parts);
+
+    // entity id
+    var id;
+    setup(function() {
+      return subject.create().then(function(result) {
+        id = result;
+      });
+    });
+
+    // we need to add some parts to the entity
+    setup(function() {
+      var promises = [];
+      var offset = 0;
+      parts.forEach(function(part) {
+        var length = part.length;
+        promises.push(subject.addPart(
+          id,
+          offset,
+          length,
+          part
+        ));
+        offset += length + 1;
+      });
+
+      return Promise.all(promises);
+    });
+
+    test('stream from begining', function(done) {
+      var stream = subject.content(id);
+      var buffers = [];
+      stream.on('data', function(buffer) {
+        buffers.push(buffer);
+      });
+
+      stream.on('end', function() {
+        var joined = Buffer.concat(buffers);
+        assert.equal(
+          joined.toString(),
+          expectedFinalBuffer.toString()
+        );
+        done();
+      });
     });
   });
 });

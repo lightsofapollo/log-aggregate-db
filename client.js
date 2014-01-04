@@ -1,5 +1,7 @@
 var Promise = require('promise'),
-    promiseProxy = require('proxied-promise-object');
+    TransformStream = require('stream').Transform,
+    promiseProxy = require('proxied-promise-object'),
+    QueryStream = require('pg-query-stream');
 
 var SQL = {
   insertEntity: 'INSERT INTO log_aggregate_db.entities' +
@@ -13,7 +15,37 @@ var SQL = {
   insertPart: 'INSERT INTO log_aggregate_db.parts ' +
                 '(entities_id, part_offset, part_length, content) ' +
               'VALUES ' +
-                '($1, $2, $3, $4)'
+                '($1, $2, $3, $4)',
+
+  findContent: 'SELECT content, part_offset FROM log_aggregate_db.parts ' +
+               'WHERE entities_id = $1 AND part_offset >= $2'
+};
+
+function ContentStream() {
+  TransformStream.call(this);
+  // Sorta hacky but the idea is we get written to by objects and the
+  // stream outputs binary.
+  this._writableState.objectMode = true;
+}
+
+ContentStream.prototype = {
+  __proto__: TransformStream.prototype,
+
+  /**
+  Starting offset
+  */
+  offset: 0,
+
+  /**
+  Current offset inside the parts.
+  */
+  currentOffset: 0,
+
+  _transform: function(chunk, encoding, done) {
+    this.currentOffset += chunk.part_offset;
+    this.push(chunk.content);
+    done();
+  }
 };
 
 function Client(db) {
@@ -87,6 +119,9 @@ Client.prototype = {
   /**
   Insert a piece of the stream into a particular entity.
 
+  XXX: We don't have a use case for streaming a series of parts as one
+       transaction so there is no way to do this right now.
+
   @param {Number} id of entity (returned by create)
   @param {Number} offset of the buffer.
   @param {Number} length (in bytes) of the buffer.
@@ -99,7 +134,27 @@ Client.prototype = {
       length,
       buffer
     ]);
-  }
+  },
+
+  /**
+  Fetches the content of a particular entity starting from an offset
+
+  @param {Number} id of entity.
+  @param {Number} [startingOffset=0] (inclusive) starting offset in the stream.
+  @return {ReadableStream} readable stream to consume from.
+  */
+  content: function(id, startingOffset) {
+    var contentStream = new ContentStream({
+      offset: startingOffset
+    });
+
+    var stream = new QueryStream(SQL.findContent, [id, startingOffset || 0]);
+
+    stream.pipe(contentStream);
+    this.db.query(stream);
+
+    return contentStream;
+  },
 };
 
 module.exports = Client;
