@@ -1,5 +1,6 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+POSTGRES_PASS = 'vagrant';
 
 Vagrant.configure("2") do |config|
   # All Vagrant configuration is done here. The most common configuration
@@ -15,16 +16,38 @@ Vagrant.configure("2") do |config|
   # doesn't already exist on the user's system.
   config.vm.box_url = "http://grahamc.com/vagrant/ubuntu-12.04-omnibus-chef.box"
 
+  config.vm.provision :shell,
+    inline: "echo export POSTGRES_URI=postgres://vagrant:#{POSTGRES_PASS}@127.0.0.1 > /etc/profile.d/postgres.sh"
+
   config.vm.provision :chef_solo do |chef|
     chef.json = {
       postgresql: {
-        password: 'postgresql'
+        password: {
+          postgres: 'vagrant'
+        },
+        databases: [
+          {
+            name: 'vagrant',
+            owner: 'vagrant'
+          }
+        ],
+        users: [
+          {
+            username: 'vagrant',
+            password: POSTGRES_PASS,
+            superuser: true,
+            createdb: true,
+            login: true
+          }
+        ]
       }
     }
 
     chef.run_list = [
       "nodejs::install_from_binary",
-      "postgresql::server"
+      "postgresql::server",
+      "postgresql::pg_user",
+      "postgresql::pg_database"
     ]
   end
 end
