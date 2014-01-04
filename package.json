@@ -10,7 +10,8 @@
     "mocha-as-promised": "~2.0.0",
     "pg": "~2.10.0",
     "promise": "~3.2.0",
-    "pg-transaction": "~1.0.1"
+    "pg-transaction": "~1.0.1",
+    "proxied-promise-object": "~0.1.0"
   },
   "devDependencies": {
     "mocha": "~1.16.2"

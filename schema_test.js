@@ -3,11 +3,18 @@ suite('postgres', function() {
   var subject = require('./schema');
   var pg = require('pg');
 
+  var Promise = require('promise'),
+      PromiseProxy = require('proxied-promise-object');
+
   // connect
   var client;
-  setup(function(done) {
-    client = new pg.Client('postgres://vagrant:vagrant@localhost/vagrant');
-    client.connect(done);
+  setup(function() {
+    client = new PromiseProxy(
+      Promise,
+      new pg.Client(process.env.POSTGRES_URI)
+    );
+
+    return client.connect();
   });
 
   teardown(function() {
@@ -15,50 +22,52 @@ suite('postgres', function() {
   });
 
   suite('#define', function() {
-    setup(function(done) {
-      client.query(sql.destroy, done);
+    setup(function() {
+      return client.query(sql.destroy);
     });
 
-    setup(function(done) {
-      return subject.define(client).then(null, function(err) {
-        console.log(err);
-        done(err);
-      });
+    setup(function() {
+      return subject.define(client.subject);
     });
 
-    test('version', function(done) {
-      client.query(sql.get_version, function(err, data) {
-        assert.equal(data.rows.length, 1);
-        assert.equal(data.rows[0].version, 1);
-        done();
-      });
+    test('has tables', function() {
+      return client.query(
+        'SELECT * FROM log_aggregate_db.entities'
+      );
     });
 
-    teardown(function(done) {
-      // drop the schema and all data!
-      client.query(sql.destroy, done);
+    test('can be run multiple times', function() {
+      // unwrapped version of the client gets passed
+      return subject.define(client.subject);
+    });
+
+    teardown(function() {
+      return client.query(sql.destroy);
     });
   });
 
   suite('#destroy', function() {
     setup(function() {
-      return subject.define(client);
+      return subject.define(client.subject);
     });
 
     setup(function() {
-      return subject.destroy(client);
+      return subject.destroy(client.subject);
     });
 
-    test('removal of tables and data', function(done) {
-      client.query(sql.get_version, function(err, data) {
-        assert.ok(err);
-        var msg = err.message;
-        assert.ok(
-          msg.indexOf('"log_aggregate_db.version" does not exist') !== -1,
-          'removes table'
-        );
-        done();
-      });
+    test('removal of tables and data', function() {
+      var sql = 'SELECT * FROM log_aggregate_db.entities';
+      return client.query(sql).then(
+        null,
+        function(err) {
+          assert.ok(err);
+          var msg = err.message;
+          assert.ok(
+            msg.indexOf('"log_aggregate_db.entities" does not exist') !== -1,
+            'removes table'
+          );
+        }
+      );
     });
   });
 });
