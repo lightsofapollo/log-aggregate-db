@@ -7,9 +7,9 @@ suite('client', function() {
     subject = new Client(db.client);
   });
 
-  suite('#createEntity', function() {
+  suite('#create', function() {
     test('no options', function() {
-      return subject.createEntity().then(
+      return subject.create().then(
         function(id) {
           assert.ok(id, 'passes id');
           assert(typeof id === 'number', 'is a number');
@@ -23,7 +23,7 @@ suite('client', function() {
         owner: 'owna'
       };
 
-      return subject.createEntity(opts).then(
+      return subject.create(opts).then(
         function(id) {
           return db.client.query(
             'SELECT * FROM log_aggregate_db.entities WHERE id = $1',
@@ -35,6 +35,36 @@ suite('client', function() {
           var row = results.rows[0];
           assert.equal(row.owner, opts.owner);
           assert.equal(row.content_type, opts.contentType);
+        }
+      );
+    });
+  });
+
+  suite('#insert', function() {
+    var buffer = new Buffer('woot!');
+
+    var id;
+    setup(function() {
+      return subject.create().then(function(result) {
+        id = result;
+      });
+    });
+
+    setup(function() {
+      return subject.addPart(id, 0, buffer.length, buffer);
+    });
+
+    test('part is added', function() {
+      var query = 'SELECT * FROM log_aggregate_db.parts WHERE entities_id = $1';
+      return db.client.query(query, [id]).then(
+        function(result) {
+          assert.ok(result);
+          assert.equal(result.rowCount, 1);
+
+          var row = result.rows[0];
+          assert.equal(row.part_offset, 0);
+          assert.equal(row.part_length, buffer.length);
+          assert.equal(buffer.toString(), row.content.toString());
         }
       );
     });

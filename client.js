@@ -1,15 +1,21 @@
-var Promise = require('promise');
+var Promise = require('promise'),
+    promiseProxy = require('proxied-promise-object');
 
 var SQL = {
   insertEntity: 'INSERT INTO log_aggregate_db.entities' +
                   '(updated_at, created_at, content_type, owner)' +
                 'VALUES' +
                   '(NOW(), NOW(), $1, $2)' +
-                'RETURNING id'
+                'RETURNING id',
+
+  insertPart: 'INSERT INTO log_aggregate_db.parts ' +
+                '(entities_id, part_offset, part_length, content) ' +
+              'VALUES ' +
+                '($1, $2, $3, $4)'
 };
 
 function Client(db) {
-  this.db = db;
+  this.db = promiseProxy(Promise, db);
 }
 
 Client.prototype = {
@@ -21,9 +27,8 @@ Client.prototype = {
   @param {String} [config.owner] owner of the entity.
   @return {Promise}
   */
-  createEntity: function(config) {
-    var query = Promise.denodeify(this.db.query.bind(this.db));
-    return query(SQL.insertEntity, [
+  create: function(config) {
+    return this.db.query(SQL.insertEntity, [
       (config && config.contentType) || '',
       (config && config.owner) || ''
     ]).then(
@@ -31,6 +36,23 @@ Client.prototype = {
         return result.rows[0].id;
       }
     );
+  },
+
+  /**
+  Insert a piece of the stream into a particular entity.
+
+  @param {Number} id of entity (returned by create)
+  @param {Number} offset of the buffer.
+  @param {Number} length (in bytes) of the buffer.
+  @param {String|Buffer} buffer content to insert.
+  */
+  addPart: function(id, offset, length, buffer) {
+    return this.db.query(SQL.insertPart, [
+      id,
+      offset,
+      length,
+      buffer
+    ]);
   }
 };
 
