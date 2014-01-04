@@ -27,7 +27,7 @@ CREATE SCHEMA log_aggregate_db
   CREATE TABLE parts (
     id SERIAL PRIMARY KEY,
 
-    entity_id INTEGER,
+    entity_id INTEGER REFERENCES entity(id) ON DELETE CASCADE,
 
     -- refers to the offset in the overall stream
     part_offset INTEGER,
