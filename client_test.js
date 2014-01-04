@@ -68,5 +68,15 @@ suite('client', function() {
         }
       );
     });
+
+    test('part integrity', function(done) {
+      subject.addPart(6666666, 0, 1, buffer).then(
+        null,
+        function(err) {
+          assert.ok(err.message.indexOf('violates foreign key constraint'));
+          done();
+        }
+      );
+    });
   });
 });
