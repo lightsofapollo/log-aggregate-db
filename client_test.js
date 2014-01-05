@@ -41,6 +41,35 @@ suite('client', function() {
     });
   });
 
+  suite('#get', function() {
+    var opts = { owner: 'xfoo', contentType: 'woot' };
+    var id;
+    setup(function() {
+      return subject.create(opts).then(function(result) {
+        id = result;
+      });
+    });
+
+    test('cannot find an id', function() {
+      return subject.get(id + 1000).then(
+        function(value) {
+          assert.ok(!value);
+        }
+      );
+    });
+
+    test('finds entity by id', function() {
+      return subject.get(id).then(
+        function(value) {
+          assert.equal(value.id, id);
+          assert.equal(value.owner, opts.owner);
+          assert.equal(value.contentType, opts.contentType);
+        }
+      );
+    });
+  });
+
+
   suite('#update', function() {
     var id;
     setup(function() {

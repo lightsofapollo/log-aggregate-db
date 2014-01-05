@@ -10,6 +10,8 @@ var STARTING_OFFSET = '(SELECT 1 "offset" FROM log_aggregate_db.parts ' +
                         'WHERE "offset" <= $2 LIMIT 1)';
 
 var SQL = {
+  findEntity: 'SELECT * FROM log_aggregate_db.entities WHERE id = $1',
+
   insertEntity: 'INSERT INTO log_aggregate_db.entities' +
                   '("updatedAt", "createdAt", "contentType", owner)' +
                 'VALUES' +
@@ -80,6 +82,21 @@ function Client(db) {
 }
 
 Client.prototype = {
+
+  /**
+  Get the details of an entity (but not its contents).
+
+  @param {Number} id of the particular entity.
+  @return {Promise}
+  */
+  get: function(id) {
+    return this.db.query(SQL.findEntity, [id]).then(
+      function(result) {
+        return result.rows[0];
+      }
+    );
+  },
+
   /**
   Create an entity in the log database.
 
