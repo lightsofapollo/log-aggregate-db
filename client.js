@@ -3,6 +3,12 @@ var Promise = require('promise'),
     promiseProxy = require('proxied-promise-object'),
     QueryStream = require('pg-query-stream');
 
+var FIND_CONTENT = 'SELECT content, part_offset FROM log_aggregate_db.parts ' +
+               'WHERE entities_id = $1';
+
+var STARTING_OFFSET = '(SELECT 1 part_offset FROM log_aggregate_db.parts ' +
+                        'WHERE part_offset <= $2 LIMIT 1)';
+
 var SQL = {
   insertEntity: 'INSERT INTO log_aggregate_db.entities' +
                   '(updated_at, created_at, content_type, owner)' +
@@ -17,11 +23,16 @@ var SQL = {
               'VALUES ' +
                 '($1, $2, $3, $4)',
 
-  findContent: 'SELECT content, part_offset FROM log_aggregate_db.parts ' +
-               'WHERE entities_id = $1 AND part_offset >= $2'
+  findContent: FIND_CONTENT + ' ORDER BY part_offset',
+
+  findContentRanged: 'SELECT content, part_offset FROM log_aggregate_db.parts' +
+               ' WHERE entities_id = $1 AND part_offset >= ' + STARTING_OFFSET +
+               ' ORDER BY part_offset'
 };
 
-function ContentStream() {
+function ContentStream(options) {
+  this.offset = options.offset || 0;
+
   TransformStream.call(this);
   // Sorta hacky but the idea is we get written to by objects and the
   // stream outputs binary.
@@ -32,18 +43,34 @@ ContentStream.prototype = {
   __proto__: TransformStream.prototype,
 
   /**
+  When true _transform needs to perform a part offset check / slice (only used
+  by the first transform call).
+  */
+  _partOffsetCheck: true,
+
+  /**
   Starting offset
   */
   offset: 0,
 
-  /**
-  Current offset inside the parts.
-  */
-  currentOffset: 0,
-
   _transform: function(chunk, encoding, done) {
-    this.currentOffset += chunk.part_offset;
-    this.push(chunk.content);
+    var buffer = chunk.content;
+
+    // the offset can be in the middle of one of our rows so we might
+    // need to trim it down a bit
+    if (this._partOffsetCheck) {
+      // we only check once... The query itself should get us within a
+      // single row of where to cut.
+      this._partOffsetCheck = false;
+
+      var partOffset = chunk.part_offset;
+      // our current part offset requires trimming
+      if (this.offset > partOffset) {
+        buffer = buffer.slice(this.offset - partOffset);
+      }
+    }
+
+    this.push(buffer);
     done();
   }
 };
@@ -144,17 +171,32 @@ Client.prototype = {
   @return {ReadableStream} readable stream to consume from.
   */
   content: function(id, startingOffset) {
+    startingOffset = startingOffset || 0;
+    // transform our rows into a binary stream
     var contentStream = new ContentStream({
       offset: startingOffset
     });
 
-    var stream = new QueryStream(SQL.findContent, [id, startingOffset || 0]);
+    var query;
+    var values = [id];
+
+    // two distinct search cases
+    if (startingOffset <= 0) {
+      // find the entire document
+      query = SQL.findContent;
+    } else {
+      // find a subset of the document (starting from offset N)
+      query = SQL.findContentRanged;
+      values.push(startingOffset);
+    }
+
+    var stream = new QueryStream(query, values);
 
     stream.pipe(contentStream);
     this.db.query(stream);
 
     return contentStream;
-  },
+  }
 };
 
 module.exports = Client;

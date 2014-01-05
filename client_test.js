@@ -139,10 +139,33 @@ suite('client', function() {
           length,
           part
         ));
-        offset += length + 1;
+        offset += length;
       });
 
       return Promise.all(promises);
+    });
+
+    test('stream from the middle of a chunk to the end', function(done) {
+      // Everything fits into a single byte so we can slice randomly
+      // like this.. The expectation is the actual rendering will be
+      // done by something that can buffer incomplete utf8.
+      var offset = Math.floor(expectedFinalBuffer.length / 2);
+      var expected = expectedFinalBuffer.slice(offset);
+
+      var stream = subject.content(id, offset);
+      var buffers = [];
+      stream.on('data', function(buffer) {
+        buffers.push(buffer);
+      });
+
+      stream.on('end', function() {
+        var joined = Buffer.concat(buffers);
+        assert.equal(
+          joined.toString(),
+          expected.toString()
+        );
+        done();
+      });
     });
 
     test('stream from begining', function(done) {
@@ -154,6 +177,8 @@ suite('client', function() {
 
       stream.on('end', function() {
         var joined = Buffer.concat(buffers);
+
+        assert.equal(joined.length, expectedFinalBuffer.length);
         assert.equal(
           joined.toString(),
           expectedFinalBuffer.toString()
