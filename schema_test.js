@@ -30,15 +30,31 @@ suite('postgres', function() {
       return subject.define(client.subject);
     });
 
-    test('has tables', function() {
+    function fetchVersions() {
       return client.query(
-        'SELECT * FROM log_aggregate_db.entities'
+        'SELECT version FROM log_aggregate_db.version'
+      );
+    }
+
+    test('sets version', function() {
+      fetchVersions().then(
+        function(result) {
+          assert.equal(result.rowCount, 1);
+          assert.equal(result.rows[0].version, 1);
+        }
       );
     });
 
     test('can be run multiple times', function() {
       // unwrapped version of the client gets passed
-      return subject.define(client.subject);
+      return subject.define(client.subject).then(
+        fetchVersions
+      ).then(
+        function(result) {
+          assert.equal(result.rowCount, 1);
+          assert.equal(result.rows[0].version, 1);
+        }
+      );
     });
 
     teardown(function() {
