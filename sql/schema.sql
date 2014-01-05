@@ -2,6 +2,11 @@
 
 CREATE SCHEMA IF NOT EXISTS log_aggregate_db;
 
+-- versioning table
+CREATE TABLE IF NOT EXISTS log_aggregate_db.version (
+  version INTEGER
+);
+
 -- The entity table is the overall reference 
 CREATE TABLE IF NOT EXISTS log_aggregate_db.entities (
   id SERIAL PRIMARY KEY,
@@ -35,3 +40,10 @@ CREATE TABLE IF NOT EXISTS log_aggregate_db.parts (
 
   content BYTEA
 );
+
+-- both part_offset and entities_id are heavily read
+CREATE INDEX log_aggregate_db_parts_entities_id
+  ON log_aggregate_db.parts (entities_id);
+
+CREATE INDEX log_aggregate_db_parts_part_offset
+  ON log_aggregate_db.parts (part_offset);
