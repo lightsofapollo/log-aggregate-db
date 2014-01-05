@@ -69,6 +69,38 @@ suite('client', function() {
     });
   });
 
+  suite('#delete', function() {
+    var id;
+    setup(function() {
+      return subject.create({ owner: 'foo' }).then(function(result) {
+        id = result;
+      });
+    });
+
+    setup(function() {
+      return subject.addPart(id, 0, 1, new Buffer('x'));
+    });
+
+    setup(function() {
+      return subject.delete(id);
+    });
+
+    test('get should return falsy', function() {
+      return subject.get(id).then(
+        function(value) {
+          assert.ok(!value);
+        }
+      );
+    });
+
+    test('has no content', function(done) {
+      var stream = subject.content(id);
+      stream.on('data', function(data) {
+        done(new Error('should not have data'));
+      });
+      stream.on('end', done);
+    });
+  });
 
   suite('#update', function() {
     var id;

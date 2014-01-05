@@ -20,6 +20,8 @@ var SQL = {
 
   updateEntity: 'UPDATE log_aggregate_db.entities SET "updatedAt" = NOW(),',
 
+  deleteEntity: 'DELETE FROM log_aggregate_db.entities WHERE id = $1',
+
   insertPart: 'INSERT INTO log_aggregate_db.parts ' +
                 '("entitiesId", "offset", length, content) ' +
               'VALUES ' +
@@ -114,6 +116,13 @@ Client.prototype = {
         return result.rows[0].id;
       }
     );
+  },
+
+  /**
+  Delete an entity and all of its parts.
+  */
+  delete: function(id) {
+    return this.db.query(SQL.deleteEntity, [id]);
   },
 
   /**
