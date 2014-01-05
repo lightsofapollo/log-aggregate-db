@@ -10,12 +10,12 @@ CREATE TABLE IF NOT EXISTS log_aggregate_db.version (
 -- The entity table is the overall reference 
 CREATE TABLE IF NOT EXISTS log_aggregate_db.entities (
   id SERIAL PRIMARY KEY,
-  created_at TIMESTAMP WITHOUT TIME ZONE,
-  updated_at TIMESTAMP WITHOUT TIME ZONE,
+  "createdAt" TIMESTAMP WITHOUT TIME ZONE,
+  "updatedAt" TIMESTAMP WITHOUT TIME ZONE,
 
   -- entity deals with only binary data but its useful for the
   -- client to have a real content type when serving up the data
-  content_type VARCHAR(256),
+  "contentType" VARCHAR(256),
 
   -- each entity starts in an incomplete state once data is
   -- complete we don't expect any more part writing
@@ -30,20 +30,20 @@ CREATE TABLE IF NOT EXISTS log_aggregate_db.entities (
 CREATE TABLE IF NOT EXISTS log_aggregate_db.parts (
   id SERIAL PRIMARY KEY,
 
-  entities_id INTEGER REFERENCES log_aggregate_db.entities(id) ON DELETE CASCADE,
+  "entitiesId" INTEGER REFERENCES log_aggregate_db.entities(id) ON DELETE CASCADE,
 
   -- refers to the offset in the overall stream
-  part_offset INTEGER,
+  "offset" INTEGER,
 
   -- length of current part (mostly for clients dealing with part)
-  part_length INTEGER,
+  "length" INTEGER,
 
   content BYTEA
 );
 
--- both part_offset and entities_id are heavily read
+-- both offset and entities_id are heavily read
 CREATE INDEX log_aggregate_db_parts_entities_id
-  ON log_aggregate_db.parts (entities_id);
+  ON log_aggregate_db.parts ("entitiesId");
 
-CREATE INDEX log_aggregate_db_parts_part_offset
-  ON log_aggregate_db.parts (part_offset);
+CREATE INDEX log_aggregate_db_parts_offset
+  ON log_aggregate_db.parts ("offset");

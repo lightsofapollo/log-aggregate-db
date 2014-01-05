@@ -3,31 +3,31 @@ var Promise = require('promise'),
     promiseProxy = require('proxied-promise-object'),
     QueryStream = require('pg-query-stream');
 
-var FIND_CONTENT = 'SELECT content, part_offset FROM log_aggregate_db.parts ' +
-               'WHERE entities_id = $1';
+var FIND_CONTENT = 'SELECT content, "offset" FROM log_aggregate_db.parts ' +
+               'WHERE "entitiesId" = $1';
 
-var STARTING_OFFSET = '(SELECT 1 part_offset FROM log_aggregate_db.parts ' +
-                        'WHERE part_offset <= $2 LIMIT 1)';
+var STARTING_OFFSET = '(SELECT 1 "offset" FROM log_aggregate_db.parts ' +
+                        'WHERE "offset" <= $2 LIMIT 1)';
 
 var SQL = {
   insertEntity: 'INSERT INTO log_aggregate_db.entities' +
-                  '(updated_at, created_at, content_type, owner)' +
+                  '("updatedAt", "createdAt", "contentType", owner)' +
                 'VALUES' +
                   '(NOW(), NOW(), $1, $2)' +
                 'RETURNING id',
 
-  updateEntity: 'UPDATE log_aggregate_db.entities SET updated_at = NOW(),',
+  updateEntity: 'UPDATE log_aggregate_db.entities SET "updatedAt" = NOW(),',
 
   insertPart: 'INSERT INTO log_aggregate_db.parts ' +
-                '(entities_id, part_offset, part_length, content) ' +
+                '("entitiesId", "offset", length, content) ' +
               'VALUES ' +
                 '($1, $2, $3, $4)',
 
-  findContent: FIND_CONTENT + ' ORDER BY part_offset',
+  findContent: FIND_CONTENT + ' ORDER BY "offset"',
 
-  findContentRanged: 'SELECT content, part_offset FROM log_aggregate_db.parts' +
-               ' WHERE entities_id = $1 AND part_offset >= ' + STARTING_OFFSET +
-               ' ORDER BY part_offset'
+  findContentRanged: 'SELECT content, "offset" FROM log_aggregate_db.parts' +
+               ' WHERE "entitiesId" = $1 AND "offset" >= ' + STARTING_OFFSET +
+               ' ORDER BY "offset"'
 };
 
 function ContentStream(options) {
@@ -63,7 +63,7 @@ ContentStream.prototype = {
       // single row of where to cut.
       this._partOffsetCheck = false;
 
-      var partOffset = chunk.part_offset;
+      var partOffset = chunk.offset;
       // our current part offset requires trimming
       if (this.offset > partOffset) {
         buffer = buffer.slice(this.offset - partOffset);
@@ -109,6 +109,7 @@ Client.prototype = {
   @param {Boolean} [options.complete]
     when true no more parts are expected to be added.
   @param {String} [options.owner] Current owner of the entity
+  @return {Promise}
   */
   update: function(id, options) {
     var query = SQL.updateEntity;
@@ -153,6 +154,7 @@ Client.prototype = {
   @param {Number} offset of the buffer.
   @param {Number} length (in bytes) of the buffer.
   @param {String|Buffer} buffer content to insert.
+  @return {Promise}
   */
   addPart: function(id, offset, length, buffer) {
     return this.db.query(SQL.insertPart, [

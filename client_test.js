@@ -35,7 +35,7 @@ suite('client', function() {
         function(results) {
           var row = results.rows[0];
           assert.equal(row.owner, opts.owner);
-          assert.equal(row.content_type, opts.contentType);
+          assert.equal(row.contentType, opts.contentType);
         }
       );
     });
@@ -85,15 +85,17 @@ suite('client', function() {
     });
 
     test('part is added', function() {
-      var query = 'SELECT * FROM log_aggregate_db.parts WHERE entities_id = $1';
+      var query =
+        'SELECT * FROM log_aggregate_db.parts WHERE "entitiesId" = $1';
+
       return db.client.query(query, [id]).then(
         function(result) {
           assert.ok(result);
           assert.equal(result.rowCount, 1);
 
           var row = result.rows[0];
-          assert.equal(row.part_offset, 0);
-          assert.equal(row.part_length, buffer.length);
+          assert.equal(row.offset, 0);
+          assert.equal(row.length, buffer.length);
           assert.equal(buffer.toString(), row.content.toString());
         }
       );
