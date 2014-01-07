@@ -1,6 +1,6 @@
 {
   "name": "log-aggregate-db",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Append only (log) entity database",
   "main": "schema.js",
   "directories": {
