@@ -15,7 +15,9 @@
     "pg-query-stream": "~0.2.0"
   },
   "devDependencies": {
-    "mocha": "~1.16.2"
+    "mocha": "~1.16.2",
+    "mocha-as-promised": "~2.0.0",
+    "uuid": "~1.4.1"
   },
   "scripts": {
     "test": "make test"
