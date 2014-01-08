@@ -1,6 +1,6 @@
 {
   "name": "log-aggregate-db",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Append only (log) entity database",
   "main": "index.js",
   "directories": {
@@ -11,7 +11,8 @@
     "pg": "~2.10.0",
     "promise": "~3.2.0",
     "pg-transaction": "~1.0.1",
-    "proxied-promise-object": "~0.1.0"
+    "proxied-promise-object": "~0.1.0",
+    "pg-query-stream": "~0.2.0"
   },
   "devDependencies": {
     "mocha": "~1.16.2"
