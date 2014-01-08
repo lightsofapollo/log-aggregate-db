@@ -52,7 +52,7 @@ function define(pgclient) {
 
 function upgradeSchema(pgclient) {
   // like a require we use sync IO to load the sql file.
-  var sql = fs.readFileSync('sql/schema.sql', 'utf8');
+  var sql = fs.readFileSync(__dirname + '/sql/schema.sql', 'utf8');
   var txn = PromiseProxy(Promise, new Transaction(pgclient));
 
   return new Promise(function(accept, reject) {
